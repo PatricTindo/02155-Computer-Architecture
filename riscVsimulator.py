@@ -1,22 +1,23 @@
 PC = 0  # Program Counter
 registers = [0] * 32  # 32 General Purpose Registers
 
-memory = []  # Simulated Memory
+
+memory = {}  # Simulated Memory
 
 program_name = input("Press enter program name: ")
 
 with open(program_name, 'rb') as f:
     data = f.read()
-for i in range(0, len(data), 4):
+for i in range(0, len(data), 4): # go through data 4 bytes at a time
     instruction = int.from_bytes(data[i:i+4], byteorder='little')
     print(f"0x{i:08X}: 0x{instruction:032b}")
-    memory.append(instruction & 0xFFFFFFFF)  # Store instruction in memory
+    memory[i] = instruction & 0xFFFFFFFF  # Store instruction in memory
     
 
 
 while True:
-    
-    instruction = memory[PC//4]
+
+    instruction = memory.get(PC, 0)
     PC += 4
     opcode = instruction & 0x7F  # Extract opcode from instruction
 
@@ -25,12 +26,12 @@ while True:
             # Extract destination register (rd = instruction[11-7]) and immediate value (imm = instruction[31-12])
             rd = (instruction >> 7) & 0b111
 
-            imm = (instruction >> 12) & 0b111111111111
+            imm = (instruction & 0b111111111111111111111000000000000) 
             
             # sign-extend the immediate value to 32 bits
-            imm = imm << 12
-            if imm & 0x80000000:
-                imm |= 0xFFFFF000
+            #imm = imm << 12
+            #if imm & 0x80000000:
+            #    imm |= 0xFFFFF000
 
             # Execute LUI instruction
             registers[rd] = imm
