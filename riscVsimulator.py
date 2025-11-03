@@ -6,6 +6,7 @@ memory = {}  # Simulated Memory
 
 program_name = input("Press enter program name: ")
 
+#open the binary file and load it into memory
 with open(program_name, 'rb') as f:
     data = f.read()
 for i in range(0, len(data), 4): # go through data 4 bytes at a time
@@ -14,13 +15,13 @@ for i in range(0, len(data), 4): # go through data 4 bytes at a time
     memory[i] = instruction & 0xFFFFFFFF  # Store instruction in memory
     
 
-
+# Main execution loop
 while True:
-
+    # Fetch instruction
     instruction = memory.get(PC, 0)
     PC += 4
     opcode = instruction & 0x7F  # Extract opcode from instruction
-
+    # Decode and Execute instruction based on opcode
     match opcode:
         case 0b0110111:  # LUI instruction
             # Extract destination register (rd = instruction[11-7]) and immediate value (imm = instruction[31-12])
@@ -84,7 +85,22 @@ while True:
                 case 1:  # SYS_PRINT_INT
                     print(f"Printing integer: {registers[10]}")
                     pass
-            
+        case 0b0010111: # AUIPC instruction 
+            pass  
+        case 0b0110011: # R-type instructions (add sub)
+            pass
+        case 0b0000011: # Load instructions
+            pass
+        case 0b0100011: # Store instructions
+            pass
+        case 0b1101111: # JAL instruction
+            pass
+        case 0b1100111: # JALR instruction
+            pass
+        case 0b1100011: # Branch instructions
+            pass
+        
+        
         case _: # Default case for unrecognized opcodes
             print(f"Unrecognized opcode: {opcode:07b} at PC: {PC}")
             break
