@@ -23,7 +23,7 @@ while True:
     opcode = instruction & 0x7F  # Extract opcode from instruction
     # Decode and Execute instruction based on opcode
     match opcode:
-        case 0b0110111:  # LUI instruction
+        case 0b0110111: # LUI instruction
             # Extract destination register (rd = instruction[11-7]) and immediate value (imm = instruction[31-12])
             rd = (instruction >> 7) & 0b111
 
@@ -37,9 +37,19 @@ while True:
             # Execute LUI instruction
             registers[rd] = imm
             
-            print(f"LUI: x{rd} = {imm:08X}")
-            
-        case 0b0010011:
+            print(f"LUI: x{rd} = {imm:08X}")            
+        case 0b0010111: # AUIPC instruction 
+            pass  
+        case 0b1101111: # JAL instruction
+            # Execute corresponding instruction
+            pass
+        case 0b1100011: # Branch instructions
+            pass
+        case 0b1100111: # JALR instruction
+            pass
+        case 0b0000011: # Memory Load instructions
+            pass
+        case 0b0010011: # Integer register-immediate instructions & Constant Shift Instructions
             # further decode based on func3
             func3 = (instruction >> 12) & 0b111 # Extract func3 field instruction[14-12]
             
@@ -70,8 +80,9 @@ while True:
                             pass
                 
             pass
-        case 0b1101111:
-            # Execute corresponding instruction
+        case 0b0100011: # Memory Store instructions
+            pass
+        case 0b0110011: # Integer Register-Register Instructions
             pass
         case 0b1110011: # ecall instruction
             # read from a7 to determine the syscall type
@@ -85,20 +96,9 @@ while True:
                 case 1:  # SYS_PRINT_INT
                     print(f"Printing integer: {registers[10]}")
                     pass
-        case 0b0010111: # AUIPC instruction 
-            pass  
-        case 0b0110011: # R-type instructions (add sub)
-            pass
-        case 0b0000011: # Load instructions
-            pass
-        case 0b0100011: # Store instructions
-            pass
-        case 0b1101111: # JAL instruction
-            pass
-        case 0b1100111: # JALR instruction
-            pass
-        case 0b1100011: # Branch instructions
-            pass
+        
+        
+        
         
         
         case _: # Default case for unrecognized opcodes
