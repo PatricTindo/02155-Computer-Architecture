@@ -49,18 +49,121 @@ while True:
             
             match func3:
                 case 0b000: # BEQ instruction
-                    pass
+                    rs1 = (instruction >> 15) & 0b111
+                    rs2 = (instruction >> 20) & 0b111
+                    imm_12 = (instruction >> 31) & 0b1
+                    if registers[rs1] == registers[rs2]:
+                        imm = ((imm_12 << 12) | 
+                               (((instruction >> 25) & 0b111111) << 5) | 
+                               (((instruction >> 8) & 0b11111) << 1) | 
+                               (((instruction >> 7) & 0b1) << 11))
+                        
+                        # sign-extend the immediate value to 32 bits
+                        if imm & 0x1000:
+                            imm |= 0xFFFFE000
+                        
+                        PC = (PC + imm) & 0xFFFFFFFF #  maybe subtract 4 to PC
+                        print(f"BEQ taken: PC = {PC:08X}")
+                    else:
+                        print(f"BEQ not taken")
+                        pass                              
                 case 0b001: # BNE instruction
-                    pass
+                    rs1 = (instruction >> 15) & 0b111
+                    rs2 = (instruction >> 20) & 0b111
+                    imm_12 = (instruction >> 31) & 0b1
+                    if registers[rs1] != registers[rs2]:
+                        imm = ((imm_12 << 12) | 
+                               (((instruction >> 25) & 0b111111) << 5) | 
+                               (((instruction >> 8) & 0b11111) << 1) | 
+                               (((instruction >> 7) & 0b1) << 11))
+                        
+                        # sign-extend the immediate value to 32 bits
+                        if imm & 0x1000:
+                            imm |= 0xFFFFE000
+                        
+                        PC = (PC + imm) & 0xFFFFFFFF # maybe subtract 4 to PC
+                        print(f"BNE taken: PC = {PC:08X}")
+                    else:
+                        print(f"BNE not taken")
+                        pass
                 case 0b100: # BLT instruction
-                    pass
+                    rs1 = (instruction >> 15) & 0b111
+                    rs2 = (instruction >> 20) & 0b111
+                    imm_12 = (instruction >> 31) & 0b1
+                    if registers[rs1] < registers[rs2]:
+                        imm = ((imm_12 << 12) | 
+                               (((instruction >> 25) & 0b111111) << 5) | 
+                               (((instruction >> 8) & 0b11111) << 1) | 
+                               (((instruction >> 7) & 0b1) << 11))
+                        
+                        # sign-extend the immediate value to 32 bits
+                        if imm & 0x1000:
+                            imm |= 0xFFFFE000
+                        
+                        PC = (PC + imm) & 0xFFFFFFFF # maybe subtract 4 to PC
+                        print(f"BLT taken: PC = {PC:08X}")
+                    else:
+                        print(f"BLT not taken")
+                        pass
                 case 0b101: # BGE instruction
-                    pass
+                    rs1 = (instruction >> 15) & 0b111
+                    rs2 = (instruction >> 20) & 0b111
+                    imm_12 = (instruction >> 31) & 0b1
+                    if registers[rs1] >= registers[rs2]:
+                        imm = ((imm_12 << 12) | 
+                               (((instruction >> 25) & 0b111111) << 5) | 
+                               (((instruction >> 8) & 0b11111) << 1) | 
+                               (((instruction >> 7) & 0b1) << 11))
+                        
+                        # sign-extend the immediate value to 32 bits
+                        if imm & 0x1000:
+                            imm |= 0xFFFFE000
+                        
+                        PC = (PC + imm) & 0xFFFFFFFF # maybe subtract 4 to PC
+                        print(f"BGE taken: PC = {PC:08X}")
+                    else:
+                        print(f"BGE not taken")
+                        pass
                 case 0b110: # BLTU instruction
-                    pass
+                    rs1 = (instruction >> 15) & 0b111
+                    rs2 = (instruction >> 20) & 0b111
+                    imm_12 = (instruction >> 31) & 0b1
+                    if (registers[rs1]<=registers[rs2]):
+                        imm = ((imm_12 << 12) | 
+                               (((instruction >> 25) & 0b111111) << 5) | 
+                               (((instruction >> 8) & 0b11111) << 1) | 
+                               (((instruction >> 7) & 0b1) << 11))
+                        
+                        # sign-extend the immediate value to 32 bits
+                        if imm & 0x1000:
+                            imm |= 0xFFFFE000
+                        
+                        PC = (PC + imm) & 0xFFFFFFFF # maybe subtract 4 to PC
+                        print(f"BLTU taken: PC = {PC:08X}")
+                    else:
+                        print(f"BLTU not taken")
+                        pass
                 case 0b111: # BGEU instruction
-                    pass        
+                    rs1 = (instruction >> 15) & 0b111
+                    rs2 = (instruction >> 20) & 0b111
+                    imm_12 = (instruction >> 31) & 0b1
+                    if (registers[rs1]>=registers[rs2]):
+                        imm = ((imm_12 << 12) | 
+                               (((instruction >> 25) & 0b111111) << 5) | 
+                               (((instruction >> 8) & 0b11111) << 1) | 
+                               (((instruction >> 7) & 0b1) << 11))
+                        
+                        # sign-extend the immediate value to 32 bits
+                        if imm & 0x1000:
+                            imm |= 0xFFFFE000
+                        
+                        PC = (PC + imm) & 0xFFFFFFFF # maybe subtract 4 to PC
+                        print(f"BGEU taken: PC = {PC:08X}")
+                    else:
+                        print(f"BGEU not taken")
+                        pass                            
                 case _: # Default case for unrecognized func3
+                    print(f"Unrecognized branch func3: {func3:03b} at PC: {PC}")
                     pass
         case 0b1100111: # JALR instruction
             pass
