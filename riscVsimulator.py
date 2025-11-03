@@ -44,7 +44,24 @@ while True:
             # Execute corresponding instruction
             pass
         case 0b1100011: # Branch instructions
-            pass
+            # further decode based on func3
+            func3 = (instruction >> 12) & 0b111 # Extract func3 field instruction[14-12]
+            
+            match func3:
+                case 0b000: # BEQ instruction
+                    pass
+                case 0b001: # BNE instruction
+                    pass
+                case 0b100: # BLT instruction
+                    pass
+                case 0b101: # BGE instruction
+                    pass
+                case 0b110: # BLTU instruction
+                    pass
+                case 0b111: # BGEU instruction
+                    pass        
+                case _: # Default case for unrecognized func3
+                    pass
         case 0b1100111: # JALR instruction
             pass
         case 0b0000011: # Memory Load instructions
