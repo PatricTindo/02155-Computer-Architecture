@@ -65,7 +65,7 @@ while True:
                         PC = (PC + imm) & 0xFFFFFFFF #  maybe subtract 4 to PC
                         print(f"BEQ taken: PC = {PC:08X}")
                     else:
-                        print(f"BEQ not taken")
+                        print(f"BEQ not taken because {registers[rs1]:08X} != {registers[rs2]:08X}")
                         pass                              
                 case 0b001: # BNE instruction
                     rs1 = (instruction >> 15) & 0b111
@@ -84,7 +84,7 @@ while True:
                         PC = (PC + imm) & 0xFFFFFFFF # maybe subtract 4 to PC
                         print(f"BNE taken: PC = {PC:08X}")
                     else:
-                        print(f"BNE not taken")
+                        print(f"BNE not taken because {registers[rs1]:08X} == {registers[rs2]:08X}")
                         pass
                 case 0b100: # BLT instruction
                     rs1 = (instruction >> 15) & 0b111
@@ -103,7 +103,7 @@ while True:
                         PC = (PC + imm) & 0xFFFFFFFF # maybe subtract 4 to PC
                         print(f"BLT taken: PC = {PC:08X}")
                     else:
-                        print(f"BLT not taken")
+                        print(f"BLT not taken because {registers[rs1]:08X} >= {registers[rs2]:08X}")
                         pass
                 case 0b101: # BGE instruction
                     rs1 = (instruction >> 15) & 0b111
@@ -122,7 +122,7 @@ while True:
                         PC = (PC + imm) & 0xFFFFFFFF # maybe subtract 4 to PC
                         print(f"BGE taken: PC = {PC:08X}")
                     else:
-                        print(f"BGE not taken")
+                        print(f"BGE not taken because {registers[rs1]:08X} < {registers[rs2]:08X}")
                         pass
                 case 0b110: # BLTU instruction
                     rs1 = (instruction >> 15) & 0b111
@@ -141,7 +141,7 @@ while True:
                         PC = (PC + imm) & 0xFFFFFFFF # maybe subtract 4 to PC
                         print(f"BLTU taken: PC = {PC:08X}")
                     else:
-                        print(f"BLTU not taken")
+                        print(f"BLTU not taken because {registers[rs1]:08X} > {registers[rs2]:08X}")
                         pass
                 case 0b111: # BGEU instruction
                     rs1 = (instruction >> 15) & 0b111
@@ -160,7 +160,7 @@ while True:
                         PC = (PC + imm) & 0xFFFFFFFF # maybe subtract 4 to PC
                         print(f"BGEU taken: PC = {PC:08X}")
                     else:
-                        print(f"BGEU not taken")
+                        print(f"BGEU not taken because {registers[rs1]:08X} < {registers[rs2]:08X}")
                         pass                            
                 case _: # Default case for unrecognized func3
                     print(f"Unrecognized branch func3: {func3:03b} at PC: {PC}")
