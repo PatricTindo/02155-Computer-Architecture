@@ -179,7 +179,58 @@ while True:
                 
             pass
         case 0b0100011: # Memory Store instructions
+            # further decode based on func3
+            func3 = (instruction >> 12) & 0b111 # Extract func3 field instruction[14-12]
+            
+            match func3:
+                case 0b000: # SB instruction
+                    imm4 = (instruction >> 7) & 0b11111
+                    imm7 = (instruction >> 25) & 0b1111111
+                    imm = (imm7 << 5) | imm4
+                    if imm & 0x800:  # sign-extend 12-bit immediate
+                        imm |= 0xFFFFF000
+                    rs1 = (instruction >> 15) & 0x1F
+                    rs2 = (instruction >> 20) & 0x1F
+                    address = (registers[rs1] + imm) & 0xFFFFFFFF
+                    value = registers[rs2] & 0xFF
+                    memory[address] = value
+                    print(f"SB: MEM[{address:08X}] = x{rs2} = {value:02X}")
+
+                case 0b001: # SH instruction
+                    imm4 = (instruction >> 7) & 0b11111
+                    imm7 = (instruction >> 25) & 0b1111111
+                    imm = (imm7 << 5) | imm4
+                    if imm & 0x800:  # sign-extend 12-bit immediate
+                        imm |= 0xFFFFF000
+                    rs1 = (instruction >> 15) & 0x1F
+                    rs2 = (instruction >> 20) & 0x1F
+                    address = (registers[rs1] + imm) & 0xFFFFFFFF   
+                    value = registers[rs2] & 0xFFFF
+                    memory[address] = value & 0xFF
+                    memory[address + 1] = (value >> 8) & 0xFF
+                    print(f"SH: MEM[{address:08X}] = x{rs2} = {value:04X}")
+                    
+                case 0b010: # SW instruction
+                    imm4 = (instruction >> 7) & 0b11111
+                    imm7 = (instruction >> 25) & 0b1111111
+                    imm = (imm7 << 5) | imm4
+                    if imm & 0x800:  # sign-extend 12-bit immediate
+                        imm |= 0xFFFFF000
+                    rs1 = (instruction >> 15) & 0x1F
+                    rs2 = (instruction >> 20) & 0x1F
+                    address = (registers[rs1] + imm) & 0xFFFFFFFF
+                    value = registers[rs2] & 0xFFFFFFFF
+                    memory[address] = value & 0xFF
+                    memory[address + 1] = (value >> 8) & 0xFF
+                    memory[address + 2] = (value >> 16) & 0xFF
+                    memory[address + 3] = (value >> 24) & 0xFF
+                    print(f"SW: MEM[{address:08X}] = x{rs2} = {value:08X}")
+
+                case _: # Default case for unrecognized func3
+                    print(f"Unrecognized store func3: {func3:03b}")
             pass
+
+
         case 0b0110011: # Integer Register-Register Instructions
             pass
         case 0b1110011: # ecall instruction
