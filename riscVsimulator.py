@@ -39,7 +39,9 @@ while True:
             
             print(f"LUI: x{rd} = {imm:08X}")            
         case 0b0010111: # AUIPC instruction 
-            pass  
+            rd = (instruction >> 7) & 0b111
+            imm = (instruction & 0b111111111111111111111000000000000) 
+            registers[rd] = (PC - 4 + imm) & 0xFFFFFFFF
         case 0b1101111: # JAL instruction
             # Execute corresponding instruction
             pass
@@ -309,10 +311,6 @@ while True:
                 case 1:  # SYS_PRINT_INT
                     print(f"Printing integer: {registers[10]}")
                     pass
-        
-        
-        
-        
         
         case _: # Default case for unrecognized opcodes
             print(f"Unrecognized opcode: {opcode:07b} at PC: {PC}")
