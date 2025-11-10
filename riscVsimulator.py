@@ -65,7 +65,88 @@ while True:
         case 0b1100111: # JALR instruction
             pass
         case 0b0000011: # Memory Load instructions
+            # further decode based on func3
+            func3 = (instruction >> 12) & 0b111 # Extract func3 field instruction[14-12]
+            
+            match func3:
+                case 0b000:  # LB
+                    rs1 = (instruction >> 15) & 0x1F
+                    rd  = (instruction >> 7) & 0x1F
+                    imm = (instruction >> 20) & 0xFFF
+                    if imm & 0x800:  # sign-extend 12-bit immediate
+                        imm |= 0xFFFFF000
+
+                    address = (registers[rs1] + imm) & 0xFFFFFFFF
+                    byte = memory.get(address, 0) & 0xFF
+                    if byte & 0x80:  # sign extend byte to 32 bits
+                        byte |= 0xFFFFFF00
+                    if rd != 0:
+                        registers[rd] = byte & 0xFFFFFFFF
+                    print(f"LB:  x{rd} = MEM[{address:08X}] = {byte:08X}")
+
+                case 0b001:  # LH
+                    rs1 = (instruction >> 15) & 0x1F
+                    rd  = (instruction >> 7) & 0x1F
+                    imm = (instruction >> 20) & 0xFFF
+                    if imm & 0x800:
+                        imm |= 0xFFFFF000
+
+                    address = (registers[rs1] + imm) & 0xFFFFFFFF
+                    half = (memory.get(address, 0)
+                            | (memory.get(address + 1, 0) << 8)) & 0xFFFF
+                    if half & 0x8000:  # sign extend
+                        half |= 0xFFFF0000
+                    if rd != 0:
+                        registers[rd] = half & 0xFFFFFFFF
+                    print(f"LH:  x{rd} = MEM[{address:08X}] = {half:08X}")
+
+                case 0b010:  # LW
+                    rs1 = (instruction >> 15) & 0x1F
+                    rd  = (instruction >> 7) & 0x1F
+                    imm = (instruction >> 20) & 0xFFF
+                    if imm & 0x800:
+                        imm |= 0xFFFFF000
+
+                    address = (registers[rs1] + imm) & 0xFFFFFFFF
+                    word = (memory.get(address, 0)
+                            | (memory.get(address + 1, 0) << 8)
+                            | (memory.get(address + 2, 0) << 16)
+                            | (memory.get(address + 3, 0) << 24)) & 0xFFFFFFFF
+                    if rd != 0:
+                        registers[rd] = word
+                    print(f"LW:  x{rd} = MEM[{address:08X}] = {word:08X}")
+
+                case 0b100:  # LBU
+                    rs1 = (instruction >> 15) & 0x1F
+                    rd  = (instruction >> 7) & 0x1F
+                    imm = (instruction >> 20) & 0xFFF
+                    if imm & 0x800:
+                        imm |= 0xFFFFF000
+
+                    address = (registers[rs1] + imm) & 0xFFFFFFFF
+                    byte = memory.get(address, 0) & 0xFF
+                    if rd != 0:
+                        registers[rd] = byte
+                    print(f"LBU: x{rd} = MEM[{address:08X}] = {byte:08X}")
+
+                case 0b101:  # LHU
+                    rs1 = (instruction >> 15) & 0x1F
+                    rd  = (instruction >> 7) & 0x1F
+                    imm = (instruction >> 20) & 0xFFF
+                    if imm & 0x800:
+                        imm |= 0xFFFFF000
+
+                    address = (registers[rs1] + imm) & 0xFFFFFFFF
+                    half = (memory.get(address, 0)
+                            | (memory.get(address + 1, 0) << 8)) & 0xFFFF
+                    if rd != 0:
+                        registers[rd] = half
+                    print(f"LHU: x{rd} = MEM[{address:08X}] = {half:08X}")
+
+                case _:
+                    print(f"Unrecognized load func3: {func3:03b}")
             pass
+
         case 0b0010011: # Integer register-immediate instructions & Constant Shift Instructions
             # further decode based on func3
             func3 = (instruction >> 12) & 0b111 # Extract func3 field instruction[14-12]
