@@ -42,8 +42,7 @@ while True:
             rd = (instruction >> 7) & 0b111
             imm = (instruction & 0b111111111111111111111000000000000)
             registers[rd] = (PC - 4 + imm) & 0xFFFFFFFF
-            print(f"AUIPC: x{rd} = {registers[rd]:08X}")
-        
+            print(f"AUIPC: x{rd} = {registers[rd]:08X}")        
         case 0b1101111: # JAL instruction KLEMENS
             rd = (instruction >> 7) & 0b111
             
