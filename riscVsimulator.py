@@ -39,6 +39,30 @@ while True:
             
             print(f"LUI: x{rd} = {imm:08X}")            
         case 0b0010111: # AUIPC instruction 
+            pass  
+        
+        case 0b1101111: # JAL instruction KLEMENS
+            rd = (instruction >> 7) & 0b111
+            
+            registers[rd] = PC  # Store return address in rd
+            
+            offset_20 = (instruction >> 31) & 0b1
+            offset_10_1 = (instruction >> 21) & 0b1111111111
+            offset_11 = (instruction >> 20) & 0b1
+            offset_19_12 = (instruction >> 12) & 0b11111111
+            
+            offset = (offset_20 << 20) | (offset_19_12 << 12) | (offset_11 << 11) | (offset_10_1 << 1)
+            # Calculate immediate value for JAL instruction
+            
+            # perform sign-extension on offset
+            if offset & 0x100000:
+                offset = offset - (1 << 21)
+            
+            PC = (PC - 4 + offset) & 0xFFFFFFFF  # Update PC to target address
+            
+            print(f"JAL: x{rd} = {registers[rd]:08X}, PC = {PC:08X} + {offset:08X}")
+            
+            
             rd = (instruction >> 7) & 0b111
             imm = (instruction & 0b111111111111111111111000000000000) 
             registers[rd] = (PC - 4 + imm) & 0xFFFFFFFF
@@ -167,8 +191,22 @@ while True:
                 case _: # Default case for unrecognized func3
                     print(f"Unrecognized branch func3: {func3:03b} at PC: {PC}")
                     pass
-        case 0b1100111: # JALR instruction
-            pass
+        case 0b1100111: # JALR instruction KLEMENS
+            rd = (instruction >> 7) & 0b111
+            rs1 = (instruction >> 15) & 0b111
+            imm = (instruction >> 20) & 0b111111111111
+            
+            # perform signed conversion on imm
+            if imm & 0x800:
+                imm = imm - (1 << 12)
+                
+            if rd != 0:
+                registers[rd] = PC  # Store current PC
+            
+            PC = (registers[rs1] + imm) & 0xFFFFFFFE  # Update PC to target address (LSB set to 0)
+            
+            
+            
         case 0b0000011: # Memory Load instructions
             # further decode based on func3
             func3 = (instruction >> 12) & 0b111 # Extract func3 field instruction[14-12]
@@ -251,6 +289,7 @@ while True:
                 case _:
                     print(f"Unrecognized load func3: {func3:03b}")
             pass
+        case 0b0010011: # Integer register-immediate instructions & Constant Shift Instructions  KLEMENS
 
         case 0b0010011: # Integer register-immediate instructions & Constant Shift Instructions
             # further decode based on func3
@@ -266,23 +305,134 @@ while True:
                     
                     imm = (instruction >> 20) & 0b111111111111
                     
-                    # 
+                    # perform signed conversion on imm
+                    if imm & 0x800:
+                        imm = imm - (1 << 12)
+                    
+                    # Execute ADDI instruction
                     registers[rd] = (registers[rs1] + imm) & 0xFFFFFFFF
 
                     print(f"ADDI: x{rd} = x{rs1} + {imm:08X}")
-
+                
+                case 0b010: # SLTI instruction
+                    rd = (instruction >> 7) & 0b111
+                    
+                    rs1 = (instruction >> 15) & 0b111
+                    
+                    imm = (instruction >> 20) & 0b111111111111
+                    
+                    # perform signed conversion on imm
+                    if imm & 0x800:
+                        imm = imm - (1 << 12)
+                    
+                    
+                    if (registers[rs1] < imm):
+                        registers[rd] = 1
+                    else:
+                        registers[rd] = 0
+                    
+                    print(f"SLTI: x{rd} = (x{rs1} < {imm:08X})")
+                    
+                case 0b011: # SLTIU instruction
+                    rd = (instruction >> 7) & 0b111
+                    
+                    rs1 = (instruction >> 15) & 0b111
+                    
+                    # load immediate value as unsigned
+                    imm = (instruction >> 20) & 0b111111111111
+                    
+                    # perform unsigned comparison
+                    if (registers[rs1] < imm):
+                        registers[rd] = 1
+                    else:
+                        registers[rd] = 0
+                        
+                    print(f"SLTIU: x{rd} = (x{rs1} < {imm:08X})")
+                    
+                case 0b100: # XORI instruction
+                    rd = (instruction >> 7) & 0b111
+                    
+                    rs1 = (instruction >> 15) & 0b111
+                    
+                    imm = (instruction >> 20) & 0b111111111111
+                    
+                    if (registers[rs1] ^ imm):
+                        registers[rd] = 1
+                    else:
+                        registers[rd] = 0
+                
+                case 0b110: # ORI instruction
+                    rd = (instruction >> 7) & 0b111
+                    
+                    rs1 = (instruction >> 15) & 0b111
+                    
+                    imm = (instruction >> 20) & 0b111111111111
+                    
+                    if (registers[rs1] | imm):
+                        registers[rd] = 1
+                    else:
+                        registers[rd] = 0
+                
+                case 0b111: # ANDI instruction
+                    rd = (instruction >> 7) & 0b111
+                    
+                    rs1 = (instruction >> 15) & 0b111
+                    
+                    imm = (instruction >> 20) & 0b111111111111
+                    
+                    if (registers[rs1] & imm):
+                        registers[rd] = 1
+                    else:
+                        registers[rd] = 0
+                
+                case 0b001: # SLLI instruction
+                    rd = (instruction >> 7) & 0b111
+                    
+                    rs1 = (instruction >> 15) & 0b111
+                    
+                    shamt = (instruction >> 20) & 0b11111
+                    
+                    registers[rd] = (registers[rs1] << shamt) & 0xFFFFFFFF
+                    
+                    print(f"SLLI: x{rd} = x{rs1} << {shamt}")
+                
                 case 0b101:
                     
                     # further decode based on func7
                     func7 = (instruction >> 25) & 0b1111111
                     
                     match func7:
-                        case 0b0000000: # SRL instruction
-                            pass
-                        case 0b0100000: # SRA instruction
-                            pass
+                        case 0b0000000: # SRLI instruction
+                            rd = (instruction >> 7) & 0b111
+                            
+                            rs1 = (instruction >> 15) & 0b111
+                            
+                            shamt = (instruction >> 20) & 0b11111
+                            
+                            registers[rd] = (registers[rs1] >> shamt) & 0xFFFFFFFF
+                            
+                            print(f"SRLI: x{rd} = x{rs1} >> {shamt}")
+                            
+                        case 0b0100000: # SRAI instruction
+                            rd = (instruction >> 7) & 0b111
+                            
+                            rs1 = (instruction >> 15) & 0b111
+                            
+                            shamt = (instruction >> 20) & 0b11111
+                            
+                            if registers[rs1] & 0x80000000:
+                                # perform arithmetic right shift for negative numbers
+                                registers[rd] = ((registers[rs1] >> shamt) | (0xFFFFFFFF << (32 - shamt))) & 0xFFFFFFFF
+                            else:
+                                registers[rd] = (registers[rs1] >> shamt) & 0xFFFFFFFF
+                            
+                            print(f"SRAI: x{rd} = x{rs1} >> {shamt} (arithmetic)")
                 
-            pass
+                        case _: # Default case for unrecognized func7
+                            pass
+                case _: # Default case for unrecognized func3
+                    pass
+                
         case 0b0100011: # Memory Store instructions
             # further decode based on func3
             func3 = (instruction >> 12) & 0b111 # Extract func3 field instruction[14-12]
