@@ -39,7 +39,10 @@ while True:
             
             print(f"LUI: x{rd} = {imm:08X}")            
         case 0b0010111: # AUIPC instruction 
-            pass  
+            rd = (instruction >> 7) & 0b111
+            imm = (instruction & 0b111111111111111111111000000000000)
+            registers[rd] = (PC - 4 + imm) & 0xFFFFFFFF
+            print(f"AUIPC: x{rd} = {registers[rd]:08X}")
         
         case 0b1101111: # JAL instruction KLEMENS
             rd = (instruction >> 7) & 0b111
@@ -66,9 +69,6 @@ while True:
             rd = (instruction >> 7) & 0b111
             imm = (instruction & 0b111111111111111111111000000000000) 
             registers[rd] = (PC - 4 + imm) & 0xFFFFFFFF
-        case 0b1101111: # JAL instruction
-            # Execute corresponding instruction
-            pass
         case 0b1100011: # Branch instructions
             # further decode based on func3
             func3 = (instruction >> 12) & 0b111 # Extract func3 field instruction[14-12]
@@ -204,9 +204,6 @@ while True:
                 registers[rd] = PC  # Store current PC
             
             PC = (registers[rs1] + imm) & 0xFFFFFFFE  # Update PC to target address (LSB set to 0)
-            
-            
-            
         case 0b0000011: # Memory Load instructions
             # further decode based on func3
             func3 = (instruction >> 12) & 0b111 # Extract func3 field instruction[14-12]
@@ -288,9 +285,7 @@ while True:
 
                 case _:
                     print(f"Unrecognized load func3: {func3:03b}")
-            pass
-        case 0b0010011: # Integer register-immediate instructions & Constant Shift Instructions  KLEMENS
-
+                    pass
         case 0b0010011: # Integer register-immediate instructions & Constant Shift Instructions
             # further decode based on func3
             func3 = (instruction >> 12) & 0b111 # Extract func3 field instruction[14-12]
@@ -431,8 +426,7 @@ while True:
                         case _: # Default case for unrecognized func7
                             pass
                 case _: # Default case for unrecognized func3
-                    pass
-                
+                    pass                
         case 0b0100011: # Memory Store instructions
             # further decode based on func3
             func3 = (instruction >> 12) & 0b111 # Extract func3 field instruction[14-12]
@@ -484,8 +478,6 @@ while True:
                 case _: # Default case for unrecognized func3
                     print(f"Unrecognized store func3: {func3:03b}")
             pass
-
-
         case 0b0110011: # Integer Register-Register Instructions
             # further decode based on func3
             func3 = (instruction >> 12) & 0b111 # Extract func3 field instruction[14-12]
