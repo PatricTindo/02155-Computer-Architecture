@@ -19,13 +19,14 @@ for i in range(0, len(data), 4): # go through data 4 bytes at a time
 while True:
     # Fetch instruction
     instruction = memory.get(PC, 0)
+    print(f"PC: {PC:08X}, Instruction: {instruction:032b}")
     PC += 4
     opcode = instruction & 0x7F  # Extract opcode from instruction
     # Decode and Execute instruction based on opcode
     match opcode:
         case 0b0110111: # LUI instruction
             # Extract destination register (rd = instruction[11-7]) and immediate value (imm = instruction[31-12])
-            rd = (instruction >> 7) & 0b111
+            rd = (instruction >> 7) & 0b11111
 
             imm = (instruction & 0b111111111111111111111000000000000) 
             
@@ -39,12 +40,12 @@ while True:
             
             print(f"LUI: x{rd} = {imm:08X}")            
         case 0b0010111: # AUIPC instruction 
-            rd = (instruction >> 7) & 0b111
+            rd = (instruction >> 7) & 0b11111
             imm = (instruction & 0b111111111111111111111000000000000)
             registers[rd] = (PC - 4 + imm) & 0xFFFFFFFF
             print(f"AUIPC: x{rd} = {registers[rd]:08X}")        
         case 0b1101111: # JAL instruction KLEMENS
-            rd = (instruction >> 7) & 0b111
+            rd = (instruction >> 7) & 0b11111
             
             registers[rd] = PC  # Store return address in rd
             
@@ -74,8 +75,8 @@ while True:
             
             match func3:
                 case 0b000: # BEQ instruction
-                    rs1 = (instruction >> 15) & 0b111
-                    rs2 = (instruction >> 20) & 0b111
+                    rs1 = (instruction >> 15) & 0b11111
+                    rs2 = (instruction >> 20) & 0b11111
                     imm_12 = (instruction >> 31) & 0b1
                     if registers[rs1] == registers[rs2]:
                         imm = ((imm_12 << 12) | 
@@ -93,8 +94,8 @@ while True:
                         print(f"BEQ not taken because {registers[rs1]:08X} != {registers[rs2]:08X}")
                         pass                              
                 case 0b001: # BNE instruction
-                    rs1 = (instruction >> 15) & 0b111
-                    rs2 = (instruction >> 20) & 0b111
+                    rs1 = (instruction >> 15) & 0b11111
+                    rs2 = (instruction >> 20) & 0b11111
                     imm_12 = (instruction >> 31) & 0b1
                     if registers[rs1] != registers[rs2]:
                         imm = ((imm_12 << 12) | 
@@ -112,8 +113,8 @@ while True:
                         print(f"BNE not taken because {registers[rs1]:08X} == {registers[rs2]:08X}")
                         pass
                 case 0b100: # BLT instruction
-                    rs1 = (instruction >> 15) & 0b111
-                    rs2 = (instruction >> 20) & 0b111
+                    rs1 = (instruction >> 15) & 0b11111
+                    rs2 = (instruction >> 20) & 0b11111
                     imm_12 = (instruction >> 31) & 0b1
                     if registers[rs1] < registers[rs2]:
                         imm = ((imm_12 << 12) | 
@@ -131,8 +132,8 @@ while True:
                         print(f"BLT not taken because {registers[rs1]:08X} >= {registers[rs2]:08X}")
                         pass
                 case 0b101: # BGE instruction
-                    rs1 = (instruction >> 15) & 0b111
-                    rs2 = (instruction >> 20) & 0b111
+                    rs1 = (instruction >> 15) & 0b11111
+                    rs2 = (instruction >> 20) & 0b11111
                     imm_12 = (instruction >> 31) & 0b1
                     if registers[rs1] >= registers[rs2]:
                         imm = ((imm_12 << 12) | 
@@ -150,8 +151,8 @@ while True:
                         print(f"BGE not taken because {registers[rs1]:08X} < {registers[rs2]:08X}")
                         pass
                 case 0b110: # BLTU instruction
-                    rs1 = (instruction >> 15) & 0b111
-                    rs2 = (instruction >> 20) & 0b111
+                    rs1 = (instruction >> 15) & 0b11111
+                    rs2 = (instruction >> 20) & 0b11111
                     imm_12 = (instruction >> 31) & 0b1
                     if (registers[rs1]<=registers[rs2]):
                         imm = ((imm_12 << 12) | 
@@ -169,8 +170,8 @@ while True:
                         print(f"BLTU not taken because {registers[rs1]:08X} > {registers[rs2]:08X}")
                         pass
                 case 0b111: # BGEU instruction
-                    rs1 = (instruction >> 15) & 0b111
-                    rs2 = (instruction >> 20) & 0b111
+                    rs1 = (instruction >> 15) & 0b11111
+                    rs2 = (instruction >> 20) & 0b11111
                     imm_12 = (instruction >> 31) & 0b1
                     if (registers[rs1]>=registers[rs2]):
                         imm = ((imm_12 << 12) | 
@@ -191,8 +192,8 @@ while True:
                     print(f"Unrecognized branch func3: {func3:03b} at PC: {PC}")
                     pass
         case 0b1100111: # JALR instruction KLEMENS
-            rd = (instruction >> 7) & 0b111
-            rs1 = (instruction >> 15) & 0b111
+            rd = (instruction >> 7) & 0b11111
+            rs1 = (instruction >> 15) & 0b11111
             imm = (instruction >> 20) & 0b111111111111
             
             # perform signed conversion on imm
@@ -293,9 +294,9 @@ while True:
                 case 0b000: # ADDI instruction
                     
                     # Extract destination register (rd), source register (rs1), and immediate value (imm)
-                    rd = (instruction >> 7) & 0b111
+                    rd = (instruction >> 7) & 0b11111
                     
-                    rs1 = (instruction >> 15) & 0b111
+                    rs1 = (instruction >> 15) & 0b11111
                     
                     imm = (instruction >> 20) & 0b111111111111
                     
@@ -306,12 +307,12 @@ while True:
                     # Execute ADDI instruction
                     registers[rd] = (registers[rs1] + imm) & 0xFFFFFFFF
 
-                    print(f"ADDI: x{rd} = x{rs1} + {imm:08X}")
+                    print(f"ADDI: x{rd} = x{rs1} + {imm}")
                 
                 case 0b010: # SLTI instruction
-                    rd = (instruction >> 7) & 0b111
+                    rd = (instruction >> 7) & 0b11111
                     
-                    rs1 = (instruction >> 15) & 0b111
+                    rs1 = (instruction >> 15) & 0b11111
                     
                     imm = (instruction >> 20) & 0b111111111111
                     
@@ -328,9 +329,9 @@ while True:
                     print(f"SLTI: x{rd} = (x{rs1} < {imm:08X})")
                     
                 case 0b011: # SLTIU instruction
-                    rd = (instruction >> 7) & 0b111
+                    rd = (instruction >> 7) & 0b11111
                     
-                    rs1 = (instruction >> 15) & 0b111
+                    rs1 = (instruction >> 15) & 0b11111
                     
                     # load immediate value as unsigned
                     imm = (instruction >> 20) & 0b111111111111
@@ -344,9 +345,9 @@ while True:
                     print(f"SLTIU: x{rd} = (x{rs1} < {imm:08X})")
                     
                 case 0b100: # XORI instruction
-                    rd = (instruction >> 7) & 0b111
+                    rd = (instruction >> 7) & 0b11111
                     
-                    rs1 = (instruction >> 15) & 0b111
+                    rs1 = (instruction >> 15) & 0b11111
                     
                     imm = (instruction >> 20) & 0b111111111111
                     
@@ -356,9 +357,9 @@ while True:
                         registers[rd] = 0
                 
                 case 0b110: # ORI instruction
-                    rd = (instruction >> 7) & 0b111
+                    rd = (instruction >> 7) & 0b11111
                     
-                    rs1 = (instruction >> 15) & 0b111
+                    rs1 = (instruction >> 15) & 0b11111
                     
                     imm = (instruction >> 20) & 0b111111111111
                     
@@ -368,9 +369,9 @@ while True:
                         registers[rd] = 0
                 
                 case 0b111: # ANDI instruction
-                    rd = (instruction >> 7) & 0b111
+                    rd = (instruction >> 7) & 0b11111
                     
-                    rs1 = (instruction >> 15) & 0b111
+                    rs1 = (instruction >> 15) & 0b11111
                     
                     imm = (instruction >> 20) & 0b111111111111
                     
@@ -380,9 +381,9 @@ while True:
                         registers[rd] = 0
                 
                 case 0b001: # SLLI instruction
-                    rd = (instruction >> 7) & 0b111
+                    rd = (instruction >> 7) & 0b11111
                     
-                    rs1 = (instruction >> 15) & 0b111
+                    rs1 = (instruction >> 15) & 0b11111
                     
                     shamt = (instruction >> 20) & 0b11111
                     
@@ -397,9 +398,9 @@ while True:
                     
                     match func7:
                         case 0b0000000: # SRLI instruction
-                            rd = (instruction >> 7) & 0b111
+                            rd = (instruction >> 7) & 0b11111
                             
-                            rs1 = (instruction >> 15) & 0b111
+                            rs1 = (instruction >> 15) & 0b11111
                             
                             shamt = (instruction >> 20) & 0b11111
                             
@@ -408,9 +409,9 @@ while True:
                             print(f"SRLI: x{rd} = x{rs1} >> {shamt}")
                             
                         case 0b0100000: # SRAI instruction
-                            rd = (instruction >> 7) & 0b111
+                            rd = (instruction >> 7) & 0b11111
                             
-                            rs1 = (instruction >> 15) & 0b111
+                            rs1 = (instruction >> 15) & 0b11111
                             
                             shamt = (instruction >> 20) & 0b11111
                             
@@ -488,32 +489,32 @@ while True:
                     
                     match func7:
                         case 0b0000000: # ADD instruction
-                            rd = (instruction >> 7) & 0b111
-                            rs1 = (instruction >> 15) & 0b111
-                            rs2 = (instruction >> 20) & 0b111
+                            rd = (instruction >> 7) & 0b11111
+                            rs1 = (instruction >> 15) & 0b11111
+                            rs2 = (instruction >> 20) & 0b11111
                             
                             registers[rd] = (registers[rs1] + registers[rs2]) & 0xFFFFFFFF
                             
                             print(f"ADD: x{rd} = x{rs1} + x{rs2}")
                         case 0b0100000: # SUB instruction
-                            rd = (instruction >> 7) & 0b111
-                            rs1 = (instruction >> 15) & 0b111
-                            rs2 = (instruction >> 20) & 0b111
+                            rd = (instruction >> 7) & 0b11111
+                            rs1 = (instruction >> 15) & 0b11111
+                            rs2 = (instruction >> 20) & 0b11111
                             
                             registers[rd] = (registers[rs1] - registers[rs2]) & 0xFFFFFFFF
                             
                             print(f"SUB: x{rd} = x{rs1} - x{rs2}")
                 case 0b001: # SLL instruction (register-shift left)
-                    rd = (instruction >> 7) & 0b111
-                    rs1 = (instruction >> 15) & 0b111
-                    rs2 = (instruction >> 20) & 0b111
+                    rd = (instruction >> 7) & 0b11111
+                    rs1 = (instruction >> 15) & 0b11111
+                    rs2 = (instruction >> 20) & 0b11111
                     shiftamount = (registers[rs2] & 0b11111)
                     registers[rd] = (registers[rs1] << shiftamount) & 0xFFFFFFFF
                     print(f"SLL: x{rd} = x{rs1} << {shiftamount}")
                 case 0b010: # SLT instruction (set less than)
-                    rd = (instruction >> 7) & 0b111
-                    rs1 = (instruction >> 15) & 0b111
-                    rs2 = (instruction >> 20) & 0b111  
+                    rd = (instruction >> 7) & 0b11111
+                    rs1 = (instruction >> 15) & 0b11111
+                    rs2 = (instruction >> 20) & 0b11111
                     if (registers[rs1] < registers[rs2]):
                         registers[rd] = 1
                         print(f"SLT: x{rd} = 1 because {registers[rs1]:08X} < {registers[rs2]:08X}")    
@@ -521,7 +522,7 @@ while True:
                         registers[rd] = 0
                         print(f"SLT: x{rd} = 0 because {registers[rs1]:08X} >= {registers[rs2]:08X}")
                 case 0b011: # SLTU instruction
-                    rd = (instruction >> 7) & 0b111
+                    rd = (instruction >> 7) & 0b11111
                     unsigned_rs1 = registers[(instruction >> 15) & 0b111] & 0xFFFFFFFF
                     unsigned_rs2 = registers[(instruction >> 20) & 0b111] & 0xFFFFFFFF
                     if (unsigned_rs1<=unsigned_rs2):
@@ -531,25 +532,25 @@ while True:
                         registers[rd] = 0
                         print(f"SLTU: x{rd} = 0 because {unsigned_rs1:08X} >= {unsigned_rs2:08X}")
                 case 0b100: # XOR instruction
-                    rd = (instruction >> 7) & 0b111
-                    rs1 = (instruction >> 15) & 0b111
-                    rs2 = (instruction >> 20) & 0b111
+                    rd = (instruction >> 7) & 0b11111
+                    rs1 = (instruction >> 15) & 0b11111
+                    rs2 = (instruction >> 20) & 0b11111
                     registers[rd] = (registers[rs1] ^ registers[rs2]) & 0xFFFFFFFF
                     print(f"XOR: x{rd} = x{rs1} ^ x{rs2}")
                     
                 case 0b101: # SRL/SRA instruction
                     match (instruction >> 25) & 0b1111111:
                         case 0b0000000: # SRL instruction
-                            rd = (instruction >> 7) & 0b111
-                            rs1 = (instruction >> 15) & 0b111
-                            rs2 = (instruction >> 20) & 0b111
+                            rd = (instruction >> 7) & 0b11111
+                            rs1 = (instruction >> 15) & 0b11111
+                            rs2 = (instruction >> 20) & 0b11111
                             shiftamount = (registers[rs2] & 0b11111)
                             registers[rd] = (registers[rs1] >> shiftamount) & 0xFFFFFFFF
                             print(f"SRL: x{rd} = x{rs1} >> {shiftamount}")
                         case 0b0100000: # SRA instruction
-                            rd = (instruction >> 7) & 0b111
-                            rs1 = (instruction >> 15) & 0b111
-                            rs2 = (instruction >> 20) & 0b111
+                            rd = (instruction >> 7) & 0b11111
+                            rs1 = (instruction >> 15) & 0b11111
+                            rs2 = (instruction >> 20) & 0b11111
                             shiftamount = (registers[rs2] & 0b11111)
                             # Arithmetic right shift
                             if registers[rs1] & 0x80000000:
@@ -558,15 +559,15 @@ while True:
                                 registers[rd] = (registers[rs1] >> shiftamount) & 0xFFFFFFFF
                             print(f"SRA: x{rd} = x{rs1} >> {shiftamount} (arithmetic)")
                 case 0b110: # OR instruction
-                    rd = (instruction >> 7) & 0b111
-                    rs1 = (instruction >> 15) & 0b111
-                    rs2 = (instruction >> 20) & 0b111
+                    rd = (instruction >> 7) & 0b11111
+                    rs1 = (instruction >> 15) & 0b11111
+                    rs2 = (instruction >> 20) & 0b11111
                     registers[rd] = (registers[rs1] | registers[rs2]) & 0xFFFFFFFF
                     print(f"OR: x{rd} = x{rs1} | x{rs2}")
                 case 0b111: # AND instruction
-                    rd = (instruction >> 7) & 0b111
-                    rs1 = (instruction >> 15) & 0b111
-                    rs2 = (instruction >> 20) & 0b111
+                    rd = (instruction >> 7) & 0b11111
+                    rs1 = (instruction >> 15) & 0b11111
+                    rs2 = (instruction >> 20) & 0b11111
                     registers[rd] = (registers[rs1] & registers[rs2]) & 0xFFFFFFFF
                     print(f"AND: x{rd} = x{rs1} & x{rs2}")
                 case _: # Default case for unrecognized func3
@@ -590,8 +591,11 @@ while True:
             break
 
         
-        
-    # print all registers
-    print("Registers:")
-    for i in range(32):
-        print(f"x{i}: {registers[i]:08X}")
+    
+# print all registers
+print("Registers:")
+for i in range(32):
+    # perform signed conversion on imm
+    if registers[i] & 0x80000000:
+        registers[i] = registers[i] - (1 << 32) 
+    print(f"x{i}: {registers[i]} = 0x{registers[i]&0xFFFFFFFF:08X}")
