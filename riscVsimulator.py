@@ -3,10 +3,7 @@ import glob
 
 def unit_test():
     
-    folder_name = "C:/Users/kleme/Desktop/IT-Elektronik/sidste_semester/cae-lab/finasgmt/tests/task4/"
-
-    #make list of test files *.bin in the folder
-
+    folder_name = "./cae-lab/finasgmt/tests/task4/"
 
     bin_files = glob.glob(folder_name + "*.bin")
 
@@ -41,8 +38,6 @@ def unit_test():
                 print(f"Test {i} passed for register x{j}: {solutions[base + j]:08X}")
         
         print(f"Test {i} passed all register checks.\n")
-        
-        
 
 
 def simulator(program_name):
