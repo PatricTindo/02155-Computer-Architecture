@@ -3,7 +3,7 @@ import glob
 
 def unit_test():
     
-    folder_name = "C:/Users/kleme/Desktop/IT-Elektronik/sidste_semester/cae-lab/finasgmt/tests/task_3_test/"
+    folder_name = "C:/Users/kleme/Desktop/IT-Elektronik/sidste_semester/cae-lab/finasgmt/tests/task4/"
 
     #make list of test files *.bin in the folder
 
@@ -54,17 +54,16 @@ def simulator(program_name):
     #open the binary file and load it into memory
     with open(program_name, 'rb') as f:
         data = f.read()
-    for i in range(0, len(data), 4): # go through data 4 bytes at a time
-        instruction = int.from_bytes(data[i:i+4], byteorder='little')
-        print(f"0x{i:08X}: 0x{instruction:032b}")
-        memory[i] = instruction & 0xFFFFFFFF  # Store instruction in memory
-        
+    for i in range(0, len(data), 1): # go through data 4 bytes at a time
+        instruction = data[i]
+        print(f"0x{i:08X}: 0x{instruction:08b}")
+        memory[i] = instruction & 0xFF  # Store instruction in memory
 
     # Main execution loop
     while True:
         registers[0] = 0  # x0 is always 0
         # Fetch instruction
-        instruction = memory.get(PC, 0)
+        instruction = (memory.get(PC, 0)) | (memory.get(PC + 1, 0) << 8) | (memory.get(PC + 2, 0) << 16) | (memory.get(PC + 3, 0) << 24)
         print(f"PC: {PC:08X}, Instruction: {instruction:032b}")
         PC += 4
         opcode = instruction & 0x7F  # Extract opcode from instruction
@@ -75,8 +74,7 @@ def simulator(program_name):
                 rd = (instruction >> 7) & 0b11111
 
                 imm = instruction  & 0b11111111111111111111000000000000
-                
-                
+
                 # Execute LUI instruction
                 registers[rd] = imm
                 
@@ -110,10 +108,8 @@ def simulator(program_name):
                 
                 print(f"JAL: x{rd} = {registers[rd]:08X}, PC = {PC:08X} + {offset:08X}")
                 
+                # (removed stray, incorrect overwrite of rd/imm)
                 
-                rd = (instruction >> 7) & 0b111
-                imm = (instruction & 0b111111111111111111111000000000000) 
-                registers[rd] = (PC - 4 + imm) & 0xFFFFFFFF
             case 0b1100011: # Branch instructions
                 # further decode based on func3
                 func3 = (instruction >> 12) & 0b111 # Extract func3 field instruction[14-12]
@@ -412,8 +408,8 @@ def simulator(program_name):
                         # perform signed conversion on imm
                         imm = convert_2_signed(imm,32)
                         
-                        
-                        if (registers[rs1] < imm):
+                        rs1_signed = convert_2_signed(registers[rs1], 32)
+                        if rs1_signed < imm:
                             registers[rd] = 1
                         else:
                             registers[rd] = 0
@@ -425,17 +421,15 @@ def simulator(program_name):
                         
                         rs1 = (instruction >> 15) & 0b11111
                         
-                        # load immediate value as unsigned
-                        imm = (instruction >> 20) & 0b111111111111
-                        
-                        imm = sext(imm,12,32)
+                        # unsigned 12-bit immediate, no sign extension
+                        imm = (instruction >> 20) & 0xFFF
                         
                         # perform unsigned comparison
-                        if (registers[rs1] < imm):
+                        if (registers[rs1] & 0xFFFFFFFF) < imm:
                             registers[rd] = 1
                         else:
                             registers[rd] = 0
-                            
+                             
                         print(f"SLTIU: x{rd} = (x{rs1} < {imm:08X})")
                         
                     case 0b100: # XORI instruction
@@ -662,9 +656,9 @@ def simulator(program_name):
                             
                     case 0b011: # SLTU instruction
                         rd = (instruction >> 7) & 0b11111
-                        unsigned_rs1 = registers[(instruction >> 15) & 0b111] & 0xFFFFFFFF
-                        unsigned_rs2 = registers[(instruction >> 20) & 0b111] & 0xFFFFFFFF
-                        if (unsigned_rs1<=unsigned_rs2):
+                        unsigned_rs1 = registers[(instruction >> 15) & 0b11111] & 0xFFFFFFFF
+                        unsigned_rs2 = registers[(instruction >> 20) & 0b11111] & 0xFFFFFFFF
+                        if unsigned_rs1 < unsigned_rs2:
                             registers[rd] = 1
                             print(f"SLTU: x{rd} = 1 because {unsigned_rs1:08X} < {unsigned_rs2:08X}")
                         else:
