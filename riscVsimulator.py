@@ -3,7 +3,7 @@ import glob
 
 def unit_test():
     
-    folder_name = "C:/Users/kleme/Desktop/IT-Elektronik/sidste_semester/cae-lab/finasgmt/tests/task3/"
+    folder_name = "C:/Users/kleme/Desktop/IT-Elektronik/sidste_semester/cae-lab/finasgmt/tests/task_3_test/"
 
     #make list of test files *.bin in the folder
 
@@ -62,6 +62,7 @@ def simulator(program_name):
 
     # Main execution loop
     while True:
+        registers[0] = 0  # x0 is always 0
         # Fetch instruction
         instruction = memory.get(PC, 0)
         print(f"PC: {PC:08X}, Instruction: {instruction:032b}")
@@ -73,22 +74,22 @@ def simulator(program_name):
                 # Extract destination register (rd = instruction[11-7]) and immediate value (imm = instruction[31-12])
                 rd = (instruction >> 7) & 0b11111
 
-                imm = (instruction & 0b111111111111111111111000000000000) 
+                imm = instruction  & 0b11111111111111111111000000000000
                 
-                # sign-extend the immediate value to 32 bits
-                #imm = imm << 12
-                #if imm & 0x80000000:
-                #    imm |= 0xFFFFF000
-
+                
                 # Execute LUI instruction
                 registers[rd] = imm
                 
                 print(f"LUI: x{rd} = {imm:08X}")
+            
             case 0b0010111: # AUIPC instruction 
                 rd = (instruction >> 7) & 0b11111
-                imm = (instruction & 0b111111111111111111111000000000000)
+                imm = instruction & 0b11111111111111111111000000000000
+                
+                
                 registers[rd] = (PC - 4 + imm) & 0xFFFFFFFF
                 print(f"AUIPC: x{rd} = {registers[rd]:08X}")
+            
             case 0b1101111: # JAL instruction KLEMENS
                 rd = (instruction >> 7) & 0b11111
                 
@@ -103,8 +104,7 @@ def simulator(program_name):
                 # Calculate immediate value for JAL instruction
                 
                 # perform sign-extension on offset
-                if offset & 0x100000:
-                    offset = offset - (1 << 21)
+                offset = sext(offset,21,32)
                 
                 PC = (PC - 4 + offset) & 0xFFFFFFFF  # Update PC to target address
                 
@@ -133,8 +133,7 @@ def simulator(program_name):
                                 (((instruction >> 7) & 0b1) << 11))
                             
                             # sign-extend the immediate value to 32 bits
-                            if imm & 0x1000:
-                                imm |= 0xFFFFE000
+                            imm = sext(imm,13,32)
                             
                             PC = (PC - 4 + imm) & 0xFFFFFFFF #  maybe subtract 4 to PC
                             print(f"BEQ taken: PC = {PC:08X}")
@@ -155,8 +154,7 @@ def simulator(program_name):
                                 (((instruction >> 7) & 0b1) << 11))
                             
                             # sign-extend the immediate value to 32 bits
-                            if imm & 0x1000:
-                                imm |= 0xFFFFE000
+                            imm = sext(imm,13,32)
                             
                             print(f"Calculated BNE immediate: {imm:08X}")
                             PC = (PC - 4 + imm) & 0xFFFFFFFF # maybe subtract 4 to PC
@@ -177,8 +175,7 @@ def simulator(program_name):
                                 (((instruction >> 7) & 0b1) << 11))
                             
                             # sign-extend the immediate value to 32 bits
-                            if imm & 0x1000:
-                                imm |= 0xFFFFE000
+                            imm = sext(imm,13,32)
                             
                             PC = (PC - 4 + imm) & 0xFFFFFFFF # maybe subtract 4 to PC
                             print(f"BLT taken: PC = {PC:08X}")
@@ -251,19 +248,23 @@ def simulator(program_name):
                     case _: # Default case for unrecognized func3
                         print(f"Unrecognized branch func3: {func3:03b} at PC: {PC}")
                         pass
-            case 0b1100111: # JALR instruction KLEMENS
+            case 0b1100111: # JALR instruction
                 rd = (instruction >> 7) & 0b11111
                 rs1 = (instruction >> 15) & 0b11111
                 imm = (instruction >> 20) & 0b111111111111
                 
-                # perform signed conversion on imm
-                if imm & 0x800:
-                    imm = imm - (1 << 12)
+                
+                # perform signextend on imm
+                imm = sext(imm,12,32)
+                
+                imm = convert_2_signed(imm,32)
                     
                 if rd != 0:
                     registers[rd] = PC  # Store current PC
                 
                 PC = (registers[rs1] + imm) & 0xFFFFFFFE  # Update PC to target address (LSB set to 0)
+                print(f"JALR: x{rd} = {registers[rd]:08X}, PC = {PC:08X}")
+                
             case 0b0000011: # Memory Load instructions
                 # further decode based on func3
                 func3 = (instruction >> 12) & 0b111 # Extract func3 field instruction[14-12]
@@ -273,45 +274,62 @@ def simulator(program_name):
                         rs1 = (instruction >> 15) & 0x1F
                         rd  = (instruction >> 7) & 0x1F
                         imm = (instruction >> 20) & 0xFFF
-                        if imm & 0x800:  # sign-extend 12-bit immediate
-                            imm |= 0xFFFFF000
+                        
+                        imm = sext(imm,12,32)
+                        
+                        imm = convert_2_signed(imm,32)
 
                         address = (registers[rs1] + imm) & 0xFFFFFFFF
                         byte = memory.get(address, 0) & 0xFF
-                        if byte & 0x80:  # sign extend byte to 32 bits
-                            byte |= 0xFFFFFF00
+                        
+                        byte = sext(byte, 8, 32)
+                        
                         if rd != 0:
                             registers[rd] = byte & 0xFFFFFFFF
+                        
                         print(f"LB:  x{rd} = MEM[{address:08X}] = {byte:08X}")
 
                     case 0b001:  # LH
                         rs1 = (instruction >> 15) & 0x1F
                         rd  = (instruction >> 7) & 0x1F
                         imm = (instruction >> 20) & 0xFFF
-                        if imm & 0x800:
-                            imm |= 0xFFFFF000
-
+                        
+                        imm = sext(imm,12,32)
+                        
+                        imm = convert_2_signed(imm,32)
+                        
                         address = (registers[rs1] + imm) & 0xFFFFFFFF
-                        half = (memory.get(address, 0)
-                                | (memory.get(address + 1, 0) << 8)) & 0xFFFF
-                        if half & 0x8000:  # sign extend
-                            half |= 0xFFFF0000
+                        
+                        # Assemble 2 bytes (little-endian)
+                        byte0 = memory.get(address,     0) & 0xFF
+                        byte1 = memory.get(address + 1, 0) & 0xFF
+                        half = byte0 | (byte1 << 8)
+                        
+                        half = sext(half,16,32)
+                        
                         if rd != 0:
                             registers[rd] = half & 0xFFFFFFFF
+                        
                         print(f"LH:  x{rd} = MEM[{address:08X}] = {half:08X}")
 
                     case 0b010:  # LW
                         rs1 = (instruction >> 15) & 0x1F
                         rd  = (instruction >> 7) & 0x1F
                         imm = (instruction >> 20) & 0xFFF
-                        if imm & 0x800:
-                            imm |= 0xFFFFF000
-
+                        
+                        imm = sext(imm,12,32)
+                        
+                        imm = convert_2_signed(imm,32)
+                        
                         address = (registers[rs1] + imm) & 0xFFFFFFFF
-                        word = (memory.get(address, 0)
-                                | (memory.get(address + 1, 0) << 8)
-                                | (memory.get(address + 2, 0) << 16)
-                                | (memory.get(address + 3, 0) << 24)) & 0xFFFFFFFF
+                        
+                        # Assemble 4 bytes from memory (little-endian)
+                        byte0 = memory.get(address,     0) & 0xFF
+                        byte1 = memory.get(address + 1, 0) & 0xFF
+                        byte2 = memory.get(address + 2, 0) & 0xFF
+                        byte3 = memory.get(address + 3, 0) & 0xFF
+                        word = byte0 | (byte1 << 8) | (byte2 << 16) | (byte3 << 24)
+                        
                         if rd != 0:
                             registers[rd] = word
                         print(f"LW:  x{rd} = MEM[{address:08X}] = {word:08X}")
@@ -320,11 +338,16 @@ def simulator(program_name):
                         rs1 = (instruction >> 15) & 0x1F
                         rd  = (instruction >> 7) & 0x1F
                         imm = (instruction >> 20) & 0xFFF
-                        if imm & 0x800:
-                            imm |= 0xFFFFF000
+                        
+                        imm = sext(imm,12,32)
+                        
+                        imm = convert_2_signed(imm,32)
 
                         address = (registers[rs1] + imm) & 0xFFFFFFFF
                         byte = memory.get(address, 0) & 0xFF
+                        
+                        byte = byte & 0xFF  # zero-extend
+                        
                         if rd != 0:
                             registers[rd] = byte
                         print(f"LBU: x{rd} = MEM[{address:08X}] = {byte:08X}")
@@ -333,15 +356,21 @@ def simulator(program_name):
                         rs1 = (instruction >> 15) & 0x1F
                         rd  = (instruction >> 7) & 0x1F
                         imm = (instruction >> 20) & 0xFFF
-                        if imm & 0x800:
-                            imm |= 0xFFFFF000
-
+                        
+                        imm = sext(imm,12,32)
+                        
+                        imm = convert_2_signed(imm,32)
+                        
                         address = (registers[rs1] + imm) & 0xFFFFFFFF
-                        half = (memory.get(address, 0)
-                                | (memory.get(address + 1, 0) << 8)) & 0xFFFF
+                        
+                        # Assemble 2 bytes (little-endian), zero-extended
+                        byte0 = memory.get(address,     0) & 0xFF
+                        byte1 = memory.get(address + 1, 0) & 0xFF
+                        half = byte0 | (byte1 << 8)
+                        
                         if rd != 0:
-                            registers[rd] = half
-                        print(f"LHU: x{rd} = MEM[{address:08X}] = {half:08X}")
+                            registers[rd] = half & 0xFFFF
+                        print(f"LHU: x{rd} = MEM[{address:08X}] = {half:04X}")
 
                     case _:
                         print(f"Unrecognized load func3: {func3:03b}")
@@ -361,8 +390,9 @@ def simulator(program_name):
                         imm = (instruction >> 20) & 0b111111111111
                         
                         # perform signed conversion on imm
-                        if imm & 0x800:
-                            imm = imm - (1 << 12)
+                        imm = sext(imm,12,32)
+                        
+                        imm = convert_2_signed(imm,32)
                         
                         # Execute ADDI instruction
                         registers[rd] = (registers[rs1] + imm) & 0xFFFFFFFF
@@ -376,9 +406,11 @@ def simulator(program_name):
                         
                         imm = (instruction >> 20) & 0b111111111111
                         
+                        
+                        imm = sext(imm,12,32)
+                        
                         # perform signed conversion on imm
-                        if imm & 0x800:
-                            imm = imm - (1 << 12)
+                        imm = convert_2_signed(imm,32)
                         
                         
                         if (registers[rs1] < imm):
@@ -396,7 +428,7 @@ def simulator(program_name):
                         # load immediate value as unsigned
                         imm = (instruction >> 20) & 0b111111111111
                         
-                        
+                        imm = sext(imm,12,32)
                         
                         # perform unsigned comparison
                         if (registers[rs1] < imm):
@@ -415,8 +447,7 @@ def simulator(program_name):
                         
                         # sign extend imm 
                         
-                        if imm & 0x800:
-                            imm |= 0xFFFFF000
+                        imm = sext(imm,12,32)
                         
                         registers[rd] = (registers[rs1] ^ imm) & 0xFFFFFFFF
                             
@@ -462,6 +493,8 @@ def simulator(program_name):
                         
                         registers[rd] = (registers[rs1] << shamt) & 0xFFFFFFFF
                         
+                        
+                        
                         print(f"SLLI: x{rd} = x{rs1} << {shamt}")
                     
                     case 0b101:
@@ -488,6 +521,8 @@ def simulator(program_name):
                                 
                                 shamt = (instruction >> 20) & 0b11111
                                 
+                                
+                                
                                 if registers[rs1] & 0x80000000:
                                     # perform arithmetic right shift for negative numbers
                                     registers[rd] = ((registers[rs1] >> shamt) | (0xFFFFFFFF << (32 - shamt))) & 0xFFFFFFFF
@@ -506,43 +541,60 @@ def simulator(program_name):
                 
                 match func3:
                     case 0b000: # SB instruction
-                        imm4 = (instruction >> 7) & 0b11111
-                        imm7 = (instruction >> 25) & 0b1111111
-                        imm = (imm7 << 5) | imm4
-                        if imm & 0x800:  # sign-extend 12-bit immediate
-                            imm |= 0xFFFFF000
                         rs1 = (instruction >> 15) & 0x1F
                         rs2 = (instruction >> 20) & 0x1F
+                        
+                        imm4 = (instruction >> 7) & 0b11111
+                        imm7 = (instruction >> 25) & 0b1111111
+                        
+                        imm = (imm7 << 5) | imm4
+                        
+                        imm = sext(imm,12,32)
+                        imm = convert_2_signed(imm,32)
+                        
                         address = (registers[rs1] + imm) & 0xFFFFFFFF
                         value = registers[rs2] & 0xFF
                         memory[address] = value
                         print(f"SB: MEM[{address:08X}] = x{rs2} = {value:02X}")
 
                     case 0b001: # SH instruction
-                        imm4 = (instruction >> 7) & 0b11111
-                        imm7 = (instruction >> 25) & 0b1111111
-                        imm = (imm7 << 5) | imm4
-                        if imm & 0x800:  # sign-extend 12-bit immediate
-                            imm |= 0xFFFFF000
                         rs1 = (instruction >> 15) & 0x1F
                         rs2 = (instruction >> 20) & 0x1F
-                        address = (registers[rs1] + imm) & 0xFFFFFFFF   
+                        
+                        imm4 = (instruction >> 7) & 0b11111
+                        imm7 = (instruction >> 25) & 0b1111111
+                        
+                        imm = (imm7 << 5) | imm4
+                        
+                        imm = sext(imm,12,32)
+                        imm = convert_2_signed(imm,32)
+                        
+                        address = (registers[rs1] + imm) & 0xFFFFFFFF
                         value = registers[rs2] & 0xFFFF
-                        memory[address] = value & 0xFF
+                        
+                        # Store 2 bytes (little-endian)
+                        memory[address]     = value & 0xFF
                         memory[address + 1] = (value >> 8) & 0xFF
+                        
                         print(f"SH: MEM[{address:08X}] = x{rs2} = {value:04X}")
                         
                     case 0b010: # SW instruction
-                        imm4 = (instruction >> 7) & 0b11111
-                        imm7 = (instruction >> 25) & 0b1111111
-                        imm = (imm7 << 5) | imm4
-                        if imm & 0x800:  # sign-extend 12-bit immediate
-                            imm |= 0xFFFFF000
                         rs1 = (instruction >> 15) & 0x1F
                         rs2 = (instruction >> 20) & 0x1F
+                        
+                        imm4 = (instruction >> 7) & 0b11111
+                        imm7 = (instruction >> 25) & 0b1111111
+                        
+                        imm = (imm7 << 5) | imm4
+                        
+                        imm = sext(imm,12,32)
+                        imm = convert_2_signed(imm,32)
+                        
                         address = (registers[rs1] + imm) & 0xFFFFFFFF
                         value = registers[rs2] & 0xFFFFFFFF
-                        memory[address] = value & 0xFF
+                        
+                        # Store 4 bytes (little-endian)
+                        memory[address]     = value & 0xFF
                         memory[address + 1] = (value >> 8) & 0xFF
                         memory[address + 2] = (value >> 16) & 0xFF
                         memory[address + 3] = (value >> 24) & 0xFF
@@ -566,17 +618,25 @@ def simulator(program_name):
                                 rs1 = (instruction >> 15) & 0b11111
                                 rs2 = (instruction >> 20) & 0b11111
                                 
-                                registers[rd] = (registers[rs1] + registers[rs2]) & 0xFFFFFFFF
+                                rs1_temp = convert_2_signed(registers[rs1],32)
+                                rs2_temp = convert_2_signed(registers[rs2],32)
                                 
-                                print(f"ADD: x{rd} = x{rs1} + x{rs2}")
+                                
+                                registers[rd] = (rs1_temp + rs2_temp) & 0xFFFFFFFF
+                                
+                                print(f"ADD: x{rd} = x{rs1} + x{rs2} ({rs1_temp} + {rs2_temp} = {registers[rd]:08X})")
                             case 0b0100000: # SUB instruction
                                 rd = (instruction >> 7) & 0b11111
                                 rs1 = (instruction >> 15) & 0b11111
                                 rs2 = (instruction >> 20) & 0b11111
                                 
-                                registers[rd] = (registers[rs1] - registers[rs2]) & 0xFFFFFFFF
+                                rs1_temp = convert_2_signed(registers[rs1],32)
+                                rs2_temp = convert_2_signed(registers[rs2],32)
                                 
-                                print(f"SUB: x{rd} = x{rs1} - x{rs2}")
+                                
+                                registers[rd] = (rs1_temp - rs2_temp) & 0xFFFFFFFF
+                                
+                                print(f"SUB: x{rd} = x{rs1} - x{rs2} ({rs1_temp} - {rs2_temp} = {registers[rd]:08X})")
                     case 0b001: # SLL instruction (register-shift left)
                         rd = (instruction >> 7) & 0b11111
                         rs1 = (instruction >> 15) & 0b11111
@@ -584,16 +644,22 @@ def simulator(program_name):
                         shiftamount = (registers[rs2] & 0b11111)
                         registers[rd] = (registers[rs1] << shiftamount) & 0xFFFFFFFF
                         print(f"SLL: x{rd} = x{rs1} << {shiftamount}")
+                    
                     case 0b010: # SLT instruction (set less than)
                         rd = (instruction >> 7) & 0b11111
                         rs1 = (instruction >> 15) & 0b11111
                         rs2 = (instruction >> 20) & 0b11111
-                        if (registers[rs1] < registers[rs2]):
+                        
+                        rs1_temp = convert_2_signed(registers[rs1],32)
+                        rs2_temp = convert_2_signed(registers[rs2],32)
+                        
+                        if (rs1_temp < rs2_temp):
                             registers[rd] = 1
-                            print(f"SLT: x{rd} = 1 because {registers[rs1]:08X} < {registers[rs2]:08X}")    
+                            print(f"SLT: x{rd} = 1 because {rs1_temp} < {rs2_temp}")    
                         else:
                             registers[rd] = 0
-                            print(f"SLT: x{rd} = 0 because {registers[rs1]:08X} >= {registers[rs2]:08X}")
+                            print(f"SLT: x{rd} = 0 because {rs1_temp} < {rs2_temp}")
+                            
                     case 0b011: # SLTU instruction
                         rd = (instruction >> 7) & 0b11111
                         unsigned_rs1 = registers[(instruction >> 15) & 0b111] & 0xFFFFFFFF
@@ -604,6 +670,7 @@ def simulator(program_name):
                         else:
                             registers[rd] = 0
                             print(f"SLTU: x{rd} = 0 because {unsigned_rs1:08X} >= {unsigned_rs2:08X}")
+                    
                     case 0b100: # XOR instruction
                         rd = (instruction >> 7) & 0b11111
                         rs1 = (instruction >> 15) & 0b11111
@@ -620,16 +687,19 @@ def simulator(program_name):
                                 shiftamount = (registers[rs2] & 0b11111)
                                 registers[rd] = (registers[rs1] >> shiftamount) & 0xFFFFFFFF
                                 print(f"SRL: x{rd} = x{rs1} >> {shiftamount}")
+                            
                             case 0b0100000: # SRA instruction
                                 rd = (instruction >> 7) & 0b11111
                                 rs1 = (instruction >> 15) & 0b11111
                                 rs2 = (instruction >> 20) & 0b11111
                                 shiftamount = (registers[rs2] & 0b11111)
-                                # Arithmetic right shift
+                                
                                 if registers[rs1] & 0x80000000:
+                                    # perform arithmetic right shift for negative numbers
                                     registers[rd] = ((registers[rs1] >> shiftamount) | (0xFFFFFFFF << (32 - shiftamount))) & 0xFFFFFFFF
                                 else:
-                                    registers[rd] = (registers[rs1] >> shiftamount) & 0xFFFFFFFF
+                                    registers[rd] = registers[rs1] >> shiftamount
+                                
                                 print(f"SRA: x{rd} = x{rs1} >> {shiftamount} (arithmetic)")
                     case 0b110: # OR instruction
                         rd = (instruction >> 7) & 0b11111
@@ -657,7 +727,9 @@ def simulator(program_name):
                         break
                     case 1:  # SYS_PRINT_INT
                         print(f"Printing integer: {registers[10]}")
-                        pass
+                        
+                    case _:  # Default case for unrecognized syscall
+                        print(f"Unrecognized syscall type: {syscall_type} at PC: {PC}")
             
             case _: # Default case for unrecognized opcodes
                 print(f"Unrecognized opcode: {opcode:07b} at PC: {PC}")
@@ -665,13 +737,14 @@ def simulator(program_name):
 
             
     result = []
-    # print all registers
-    #print("Registers:")
+    
+    #print all registers
+    print("Registers:")
     for i in range(32):
         # perform signed conversion on imm
         #if registers[i] & 0x80000000:
         #    registers[i] = registers[i] - (1 << 32) 
-        #print(f"x{i}: {registers[i]} = 0x{registers[i]&0xFFFFFFFF:08X}")
+        print(f"x{i}: {registers[i]:08X}")
         result.append(registers[i])
     
     return result
@@ -681,5 +754,12 @@ def convert_2_signed(val: int, bits: int) -> int:
     if val & (1 << (bits - 1)):
         val -= (1 << bits)
     return val
+
+def sext(value: int, n: int, k: int) -> int:
+    """convert n-bit immediate to signed k-bit integer."""
+    sign_bit = 1 << (n - 1)
+    if value & sign_bit:
+        value -= 1 << n
+    return value & ((1 << k) - 1)
 
 unit_test()
